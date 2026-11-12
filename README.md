@@ -120,16 +120,6 @@ Web này có backend Node.js nên không chạy được trên GitHub Pages. Mu�
 - [Slide thuyết trình](PH_Math_AlgoVisualizer.pptx) (tải về rồi mở bằng PowerPoint)
 - [Giải thuật toán cho sinh viên](GiaiThuatToanChoSinhVien.pdf) (tài liệu tham khảo)
 
-## Thành viên nhóm
-
-| STT | Họ và tên | MSSV | Việc đã làm |
-|---|---|---|---|
-| 1 | (điền tên) | (điền MSSV) | (ví dụ: làm backend) |
-| 2 | (điền tên) | (điền MSSV) | (ví dụ: làm giao diện) |
-| 3 | (điền tên) | (điền MSSV) | (ví dụ: viết prompt, làm slide) |
-
-Giảng viên hướng dẫn: (điền tên thầy/cô)
-
 ## Lời cảm ơn
 
 Cảm ơn thầy/cô đã hướng dẫn nhóm trong quá trình làm đồ án. Do còn hạn chế về thời gian và kinh nghiệm nên web chắc chắn còn thiếu sót, mong mọi người góp ý thêm.
