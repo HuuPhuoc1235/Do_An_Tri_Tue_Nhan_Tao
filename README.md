@@ -1,132 +1,89 @@
-# 🧮 Web mô phỏng thuật toán bằng AI (Gemini)
+# Web mô phỏng thuật toán bằng AI (Gemini)
 
-Ứng dụng web cho phép người dùng **nhập đề bài thuật toán** (ví dụ: "N quân hậu", "Dijkstra", "Sắp xếp nổi bọt"), sau đó AI (Google Gemini) sẽ **tự sinh ra một trang HTML mô phỏng trực quan** giúp sinh viên hiểu thuật toán từng bước.
+Đây là đồ án môn Trí tuệ nhân tạo của nhóm mình.
 
-> Đồ án môn **Trí tuệ nhân tạo**.
+Ý tưởng khá đơn giản: người dùng gõ tên một bài toán thuật toán (ví dụ "N quân hậu"), web sẽ nhờ AI Gemini tạo ra một trang HTML mô phỏng bài toán đó, để mình xem thuật toán chạy từng bước cho dễ hiểu hơn là đọc code.
 
----
+## Web này làm được gì
 
-## 📌 Mục lục
+- Nhập đề bài bằng tiếng Việt hoặc tiếng Anh, AI tự tạo trang mô phỏng.
+- Mô phỏng có nút **Tạm dừng**, **Từng bước**, **Lùi** và thanh trượt để chỉnh tham số (ví dụ số N).
+- Bài nào đã tạo rồi thì lưu lại trong thư mục `cache/`, lần sau mở lại cho nhanh và đỡ tốn lượt gọi AI.
+- Nếu nhập đề không liên quan (ví dụ "viết thơ") thì web sẽ báo từ chối.
+- Có giới hạn số lần gọi để tránh bị spam.
 
-- [Giới thiệu](#-giới-thiệu)
-- [Tính năng](#-tính-năng)
-- [Công nghệ sử dụng](#-công-nghệ-sử-dụng)
-- [Cách hoạt động](#-cách-hoạt-động)
-- [Cấu trúc thư mục](#-cấu-trúc-thư-mục)
-- [Cài đặt và chạy](#-cài-đặt-và-chạy)
-- [Cấu hình biến môi trường](#-cấu-hình-biến-môi-trường)
-- [Kiểm tra lỗi bằng trình duyệt (tùy chọn)](#-kiểm-tra-lỗi-js-bằng-trình-duyệt-tùy-chọn)
-- [Kiểm tra chất lượng](#-kiểm-tra-chất-lượng)
-- [Bảo mật](#-bảo-mật)
-- [Triển khai (deploy)](#-triển-khai-deploy)
-- [Tài liệu đi kèm](#-tài-liệu-đi-kèm)
-- [Thành viên nhóm](#-thành-viên-nhóm)
+## Công nghệ nhóm dùng
 
----
+- Node.js (cần bản 20.6 trở lên)
+- Gemini API của Google
+- HTML, CSS, JavaScript cho phần giao diện
+- Playwright (không bắt buộc, dùng để kiểm tra lỗi JS)
 
-## 📖 Giới thiệu
+## Cách web hoạt động
 
-Học thuật toán qua chữ và mã nguồn thường khó hình dung. Dự án này giải quyết bằng cách để người dùng chỉ cần **gõ tên bài toán**, hệ thống sẽ tạo ra một bản mô phỏng tương tác có thể **chạy, tạm dừng, đi từng bước và lùi lại**, giúp việc học trực quan hơn.
+1. Người dùng nhập đề bài ở trang chủ.
+2. Backend (`server.js`) kiểm tra xem bài này đã có trong cache chưa. Có rồi thì trả luôn.
+3. Nếu chưa có thì gọi Gemini (`llm.js`) kèm hướng dẫn trong `prompt.js` để AI viết ra file HTML mô phỏng.
+4. Backend kiểm tra file HTML đó có an toàn không rồi lưu vào cache.
+5. Kết quả được hiển thị trong một `iframe` có sandbox.
 
-## ✨ Tính năng
-
-- Nhập đề bài bằng ngôn ngữ tự nhiên, AI tự tạo trang mô phỏng.
-- Mô phỏng có điều khiển: **Tạm dừng / Từng bước / Lùi**, thanh trượt thay đổi tham số (ví dụ N).
-- **Cache** kết quả đã tạo vào thư mục `cache/`, bài đã tạo mở lại gần như tức thì và tiết kiệm lượt gọi AI.
-- **Từ chối đề không liên quan** (ví dụ "viết thơ") bằng trang thông báo.
-- Có **giới hạn tần suất (rate limit)** để tránh bị lạm dụng.
-- Kiểm tra an toàn mã HTML do AI sinh ra trước khi hiển thị.
-
-## 🛠 Công nghệ sử dụng
-
-| Thành phần | Công nghệ |
-|---|---|
-| Backend | Node.js (>= 20.6) |
-| AI | Google Gemini API |
-| Giao diện | HTML, CSS, JavaScript |
-| Hiển thị mô phỏng | `iframe` sandbox + CSP |
-| Kiểm tra chạy thật (tùy chọn) | Playwright (Chromium) |
-
-## ⚙️ Cách hoạt động
+## Các file trong project
 
 ```
-Người dùng nhập đề bài
-        │
-        ▼
-Backend (server.js) nhận yêu cầu ──► kiểm tra cache
-        │                                  │ (có sẵn → trả về ngay)
-        ▼
-Gọi Gemini (llm.js + prompt.js) sinh file HTML mô phỏng
-        │
-        ▼
-Kiểm tra an toàn (kiểm tra tĩnh, chèn CSP, kiểm tra chạy thật tùy chọn)
-        │
-        ▼
-Lưu vào cache/ và hiển thị trong iframe sandbox
+public/index.html   giao diện người dùng
+server.js           API /api/render, cache, giới hạn số lần gọi, kiểm tra an toàn
+llm.js              chỗ gọi Gemini (muốn đổi sang AI khác chỉ cần sửa file này)
+prompt.js           câu lệnh hướng dẫn AI (sửa ở đây nếu muốn đổi kiểu giao diện mô phỏng)
+template.js         khung HTML mẫu để dựng trang mô phỏng
+package.json        danh sách thư viện
+.env.example        file mẫu để cấu hình
 ```
 
-## 📂 Cấu trúc thư mục
+Thư mục `cache/` tự sinh ra khi chạy nên không đưa lên GitHub.
 
-```
-.
-├── public/
-│   └── index.html        # Giao diện người dùng
-├── server.js             # API /api/render, cache, rate limit, kiểm tra tĩnh, CSP, kiểm tra chạy thật
-├── llm.js                # Gọi Gemini (muốn đổi nhà cung cấp AI chỉ cần sửa file này)
-├── prompt.js             # System prompt: chỉnh để đổi giao diện/phong cách mô phỏng
-├── template.js           # Khung/mẫu HTML dùng để dựng trang mô phỏng
-├── package.json
-├── .env.example          # Mẫu cấu hình biến môi trường
-└── .gitignore
+## Cách chạy trên máy
+
+Máy cần cài Node.js 20.6 trở lên.
+
+**Bước 1:** Tải code về
+
+```bash
+git clone https://github.com/HuuPhuoc1235/Do_An_Tri_Tue_Nhan_Tao.git
+cd Do_An_Tri_Tue_Nhan_Tao
 ```
 
-> Thư mục `cache/` được tạo tự động khi chạy và **không** đưa lên Git.
+Hoặc bấm nút **Code → Download ZIP** trên GitHub rồi giải nén.
 
-## 🚀 Cài đặt và chạy
+**Bước 2:** Cài thư viện
 
-**Yêu cầu:** đã cài [Node.js](https://nodejs.org) phiên bản **20.6 trở lên**.
+```bash
+npm install
+```
 
-1. **Tải mã nguồn về máy**
+**Bước 3:** Tạo file `.env`
 
-   ```bash
-   git clone https://github.com/HuuPhuoc1235/Do_An_Tri_Tue_Nhan_Tao.git
-   cd Do_An_Tri_Tue_Nhan_Tao
-   ```
+Copy file `.env.example` thành `.env` (Windows: `copy .env.example .env`), rồi mở ra điền `GEMINI_API_KEY` của bạn vào. Key lấy miễn phí ở [Google AI Studio](https://aistudio.google.com/apikey).
 
-2. **Cài thư viện**
+**Bước 4:** Chạy
 
-   ```bash
-   npm install
-   ```
+```bash
+npm start
+```
 
-3. **Tạo file cấu hình `.env`**
+**Bước 5:** Mở trình duyệt vào http://localhost:3000
 
-   Sao chép `.env.example` thành `.env`, rồi điền `GEMINI_API_KEY`
-   (lấy miễn phí tại [Google AI Studio](https://aistudio.google.com/apikey)).
-
-   - Windows (CMD): `copy .env.example .env`
-   - macOS / Linux: `cp .env.example .env`
-
-4. **Chạy ứng dụng**
-
-   ```bash
-   npm start
-   ```
-
-5. Mở trình duyệt tại **http://localhost:3000**
-
-## 🔐 Cấu hình biến môi trường
+## Các biến trong file .env
 
 | Biến | Ý nghĩa | Mặc định |
 |---|---|---|
-| `GEMINI_API_KEY` | Khóa API của Gemini (**bắt buộc**) | — |
-| `PORT` | Cổng chạy server | `3000` |
-| `RUNTIME_CHECK` | `1` để bật kiểm tra lỗi JS bằng trình duyệt thật | `0` |
-| `TRUST_PROXY` | `1` khi chạy sau reverse proxy | `0` |
+| `GEMINI_API_KEY` | Key Gemini (bắt buộc phải có) | không có |
+| `PORT` | Cổng chạy web | 3000 |
+| `RUNTIME_CHECK` | Đặt là 1 để bật kiểm tra lỗi JS bằng trình duyệt thật | 0 |
+| `TRUST_PROXY` | Đặt là 1 khi chạy sau reverse proxy | 0 |
 
-## 🧪 Kiểm tra lỗi JS bằng trình duyệt (tùy chọn)
+## Bật kiểm tra lỗi JS bằng trình duyệt (không bắt buộc)
 
-Bật tính năng này (khuyến nghị) để hệ thống chạy thử bản mô phỏng và phát hiện lỗi JavaScript trước khi hiển thị:
+Nhóm khuyến nghị bật cái này vì AI đôi khi viết code bị lỗi, bật lên thì web sẽ chạy thử trước khi hiển thị:
 
 ```bash
 npm i playwright
@@ -135,45 +92,44 @@ npx playwright install chromium
 
 Sau đó đặt `RUNTIME_CHECK=1` trong file `.env`.
 
-## ✅ Kiểm tra chất lượng
+## Cách nhóm tự kiểm tra web
 
-Sau khi chạy, thử các trường hợp sau:
+- Thanh trượt N và các nút Tạm dừng, Từng bước, Lùi chạy đúng.
+- Bài N quân hậu với N = 8 phải ra đúng 92 lời giải.
+- Nhập đề không liên quan (như "viết thơ") thì phải ra trang từ chối.
 
-- [ ] Thanh trượt N, nút **Tạm dừng / Từng bước / Lùi** hoạt động.
-- [ ] Bài **N quân hậu** với N = 8 phải đếm ra **92** lời giải.
-- [ ] Đề không liên quan (ví dụ "viết thơ") phải ra **trang từ chối**.
+## Lưu ý về bảo mật
 
-## 🛡 Bảo mật
+- Không đưa file `.env` lên GitHub, vì trong đó có API key.
+- API key chỉ để ở backend, không để trong code giao diện.
+- `iframe` chỉ dùng `sandbox="allow-scripts"` (không có `allow-same-origin`) và HTML được chèn thêm CSP để chặn truy cập mạng, tránh code do AI viết làm điều bất ngờ.
+- Nên đặt giới hạn chi tiêu cho API key để lỡ bị lạm dụng thì không mất tiền.
+- Nếu deploy sau reverse proxy thì đặt `TRUST_PROXY=1`.
+- Nếu nơi deploy hay xóa thư mục `cache/` mỗi lần cập nhật thì nên gắn volume để giữ lại.
 
-- **Không commit file `.env`.** API key chỉ nằm ở backend, không bao giờ đưa vào mã giao diện.
-- `iframe` chỉ dùng `sandbox="allow-scripts"` (**không** có `allow-same-origin`), và HTML được chèn **CSP chặn truy cập mạng**.
-- Đặt **giới hạn chi tiêu/quota** cho API key và theo dõi mức sử dụng.
-- Khi deploy sau reverse proxy, đặt `TRUST_PROXY=1`.
-- Nếu nền tảng xóa thư mục `cache/` mỗi lần redeploy, hãy gắn **volume** để giữ lại cache.
+## Deploy
 
-## ☁️ Triển khai (deploy)
-
-Dự án cần backend Node.js nên **không chạy được trên GitHub Pages**. Có thể deploy lên các dịch vụ hỗ trợ Node.js như Render hoặc Railway:
+Web này có backend Node.js nên không chạy được trên GitHub Pages. Muốn đưa lên mạng thì dùng Render hoặc Railway:
 
 - Build command: `npm install`
 - Start command: `npm start`
-- Thêm biến môi trường `GEMINI_API_KEY` (và các biến khác nếu cần) trong phần cài đặt của dịch vụ.
+- Nhớ thêm biến môi trường `GEMINI_API_KEY` trong phần cài đặt của dịch vụ.
 
-## 📎 Tài liệu đi kèm
+## Tài liệu của nhóm
 
-- 📊 [Slide thuyết trình](PH_Math_AlgoVisualizer.pptx) — tải về để xem bằng PowerPoint.
-- 📘 [Tài liệu tham khảo: Giải thuật toán cho sinh viên](GiaiThuatToanChoSinhVien.pdf)
+- [Slide thuyết trình](PH_Math_AlgoVisualizer.pptx) (tải về rồi mở bằng PowerPoint)
+- [Giải thuật toán cho sinh viên](GiaiThuatToanChoSinhVien.pdf) (tài liệu tham khảo)
 
-## 👥 Thành viên nhóm
+## Thành viên nhóm
 
-| STT | Họ và tên | MSSV | Vai trò |
+| STT | Họ và tên | MSSV | Việc đã làm |
 |---|---|---|---|
-| 1 | _Điền họ tên_ | _Điền MSSV_ | _Ví dụ: Trưởng nhóm, Backend_ |
-| 2 | _Điền họ tên_ | _Điền MSSV_ | _Ví dụ: Giao diện_ |
-| 3 | _Điền họ tên_ | _Điền MSSV_ | _Ví dụ: Prompt/AI_ |
+| 1 | (điền tên) | (điền MSSV) | (ví dụ: làm backend) |
+| 2 | (điền tên) | (điền MSSV) | (ví dụ: làm giao diện) |
+| 3 | (điền tên) | (điền MSSV) | (ví dụ: viết prompt, làm slide) |
 
-**Giảng viên hướng dẫn:** _Điền tên giảng viên_
+Giảng viên hướng dẫn: (điền tên thầy/cô)
 
----
+## Lời cảm ơn
 
-⭐ Nếu thấy dự án hữu ích, hãy cho repo một **Star** nhé!
+Cảm ơn thầy/cô đã hướng dẫn nhóm trong quá trình làm đồ án. Do còn hạn chế về thời gian và kinh nghiệm nên web chắc chắn còn thiếu sót, mong mọi người góp ý thêm.
